@@ -1,0 +1,406 @@
+---
+title: "Night-time Light in Guangdong"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+library(sf)
+library(raster)
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(rgdal)
+library(dplyr)
+library(tmap)
+library(tmaptools)
+library(sp)
+library(gridExtra)
+library(ggthemes)
+library(plyr)
+library(geojsonio)
+library(plotly)
+library(broom)
+library(mapview)
+library(crosstalk)
+library(spdep)
+library(car)
+library(fs)
+library(janitor)
+```
+
+
+Input the gpkg file(pre-proccessed in QGIS):[gd.gpkg] (https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/blob/main/Desprictive%20statisics%20and%20Regression(Rmd)/gd.gpkg)
+
+
+```{r}
+st_layers("gd.gpkg")
+
+gd_city<-st_read("gd.gpkg",layer='gd_city_attribute') 
+gd_county<- st_read("gd.gpkg",layer='gd_county_attribute')     
+
+plot(gd_city)
+```
+```{r}
+plot(gd_county)
+```
+
+
+### Check the distribution of each variable
+F1: Per Capita Gross Domestic Product Data
+F2: Number of Enterprises (Unit) Data
+F3: Total Profit (10000 yuan) Data
+F4: Invest in Fixed Assets Data
+F5: Employed Persons Data
+
+#### City scale
+```{r}
+par(mfrow = c(2,3))
+hist(gd_city$F1, breaks=30,main="Histogram of F1",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_city$F2, breaks=30,main="Histogram of F2",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_city$F3, breaks=30,main="Histogram of F3",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_city$F4, breaks=30,main="Histogram of F4",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_city$F5, breaks=30,main="Histogram of F5",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_city$night_light_mean, breaks=30,main="Histogram of VIIRS",col="lightblue",xlab=NULL,ylab=NULL)
+```
+#### County scale
+```{r}
+par(mfrow = c(2,3))
+hist(gd_county$F1, breaks=30,col="lightblue",main="Histogram of F1",xlab=NULL,ylab=NULL)
+hist(gd_county$F2, breaks=30,main="Histogram of F2",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_county$F3, breaks=30,main="Histogram of F3",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_county$F4, breaks=30,main="Histogram of F4",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_county$F5, breaks=30,main="Histogram of F5",col="lightblue",xlab=NULL,ylab=NULL)
+hist(gd_county$night_light_mean, breaks=30,main="Histogram of VIIRS",col="lightblue",xlab=NULL,ylab=NULL)
+
+```
+### Get the log of variables and cheack their distribution again
+
+#### City scale
+
+```{r}
+city_log<-st_read("gd.gpkg",layer='gd_city_log') 
+county_log<- st_read("gd.gpkg",layer='gd_county_log')
+```
+
+
+```{r}
+par(mfrow = c(2,3))
+#hist(city_log$lnf1, breaks=30,  col="light")
+#lines(density(city_log$lnf1))
+#hist(city_log$lnf2, breaks=30,  col="red")
+#hist(city_log$lnf3, breaks=30,  col="red")
+#hist(city_log$lnf4, breaks=30,  col="red")
+#hist(city_log$lnf5, breaks=30,  col="red")
+#hist(city_log$lnnight, breaks=30,  col="red")
+
+h_city_1 <- hist(city_log$lnf1,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of logF1")
+x_city_1 <- city_log$lnf1
+xfit_city_1 <- seq(min(x_city_1),max(x_city_1),length=40)
+yfit_city_1 <- dnorm(xfit_city_1,mean = mean(x_city_1),sd = sd(x_city_1))
+yfit_city_1 <- yfit_city_1*diff(h_city_1$mids[1:2])*length(x_city_1)
+lines(xfit_city_1,yfit_city_1,col="black",lwd=2)
+box()
+
+h_city_2 <- hist(city_log$lnf2,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of logF2")
+x_city_2 <- city_log$lnf2
+xfit_city_2 <- seq(min(x_city_2),max(x_city_2),length=40)
+yfit_city_2 <- dnorm(xfit_city_2,mean = mean(x_city_2),sd = sd(x_city_2))
+yfit_city_2 <- yfit_city_2*diff(h_city_2$mids[1:2])*length(x_city_2)
+lines(xfit_city_2,yfit_city_2,col="black",lwd=2)
+box()
+
+h_city_3 <- hist(city_log$lnf3,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of logF3")
+x_city_3 <- city_log$lnf3
+xfit_city_3 <- seq(min(x_city_3),max(x_city_3),length=40)
+yfit_city_3 <- dnorm(xfit_city_3,mean = mean(x_city_3),sd = sd(x_city_3))
+yfit_city_3 <- yfit_city_3*diff(h_city_3$mids[1:2])*length(x_city_3)
+lines(xfit_city_3,yfit_city_3,col="black",lwd=2)
+box()
+
+h_city_4 <- hist(city_log$lnf4,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of logF4")
+x_city_4 <- city_log$lnf4
+xfit_city_4 <- seq(min(x_city_4),max(x_city_4),length=40)
+yfit_city_4 <- dnorm(xfit_city_4,mean = mean(x_city_4),sd = sd(x_city_4))
+yfit_city_4 <- yfit_city_4*diff(h_city_4$mids[1:2])*length(x_city_4)
+lines(xfit_city_4,yfit_city_4,col="black",lwd=2)
+box()
+
+h_city_5 <- hist(city_log$lnf5,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of logF5")
+x_city_5 <- city_log$lnf5
+xfit_city_5 <- seq(min(x_city_5),max(x_city_5),length=40)
+yfit_city_5 <- dnorm(xfit_city_5,mean = mean(x_city_5),sd = sd(x_city_5))
+yfit_city_5 <- yfit_city_5*diff(h_city_5$mids[1:2])*length(x_city_5)
+lines(xfit_city_5,yfit_city_5,col="black",lwd=2)
+box()
+
+h_city_6 <- hist(city_log$lnnight,breaks = 20,col="lightblue",xlab = NULL,main = "Histogram of lognight")
+x_city_6 <- city_log$lnnight
+xfit_city_6 <- seq(min(x_city_6),max(x_city_6),length=40)
+yfit_city_6 <- dnorm(xfit_city_6,mean = mean(x_city_6),sd = sd(x_city_6))
+yfit_city_6 <- yfit_city_6*diff(h_city_6$mids[1:2])*length(x_city_6)
+lines(xfit_city_6,yfit_city_6,col="black",lwd=2)
+box()
+
+```
+#### gd_county
+```{r}
+par(mfrow = c(2,3))
+#hist(county_log$lnf1, breaks=30,  col="red")
+#hist(county_log$lnf2, breaks=30,  col="red")
+#hist(county_log$lnf3, breaks=30,  col="red")
+#hist(county_log$lnf4, breaks=30,  col="red")
+#hist(county_log$lnf5, breaks=30,  col="red")
+#hist(county_log$lnnight, breaks=30,  col="red")
+
+h_county_1 <- hist(county_log$lnf1,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of logF1")
+x_county_1 <- county_log$lnf1
+xfit_county_1 <- seq(min(x_county_1),max(x_county_1),length=40)
+yfit_county_1 <- dnorm(xfit_county_1,mean = mean(x_county_1),sd = sd(x_county_1))
+yfit_county_1 <- yfit_county_1*diff(h_county_1$mids[1:2])*length(x_county_1)
+lines(xfit_county_1,yfit_county_1,col="black",lwd=2)
+box()
+
+h_county_2 <- hist(county_log$lnf2,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of logF2")
+x_county_2 <- county_log$lnf2
+xfit_county_2 <- seq(min(x_county_2),max(x_county_2),length=40)
+yfit_county_2 <- dnorm(xfit_county_2,mean = mean(x_county_2),sd = sd(x_county_2))
+yfit_county_2 <- yfit_county_2*diff(h_county_2$mids[1:2])*length(x_county_2)
+lines(xfit_county_2,yfit_county_2,col="black",lwd=2)
+box()
+
+h_county_3 <- hist(county_log$lnf3,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of logF3")
+x_county_3 <- county_log$lnf3
+xfit_county_3 <- seq(min(x_county_3),max(x_county_3),length=40)
+yfit_county_3 <- dnorm(xfit_county_3,mean = mean(x_county_3),sd = sd(x_county_3))
+yfit_county_3 <- yfit_county_3*diff(h_county_3$mids[1:2])*length(x_county_3)
+lines(xfit_county_3,yfit_county_3,col="black",lwd=2)
+box()
+
+h_county_4 <- hist(county_log$lnf4,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of logF4")
+x_county_4 <- county_log$lnf4
+xfit_county_4 <- seq(min(x_county_4),max(x_county_4),length=40)
+yfit_county_4 <- dnorm(xfit_county_4,mean = mean(x_county_4),sd = sd(x_county_4))
+yfit_county_4 <- yfit_county_4*diff(h_county_4$mids[1:2])*length(x_county_4)
+lines(xfit_county_4,yfit_county_4,col="black",lwd=2)
+box()
+
+h_county_5 <- hist(county_log$lnf5,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of logF5")
+x_county_5 <- county_log$lnf5
+xfit_county_5 <- seq(min(x_county_5),max(x_county_5),length=40)
+yfit_county_5 <- dnorm(xfit_county_5,mean = mean(x_county_5),sd = sd(x_county_5))
+yfit_county_5 <- yfit_county_5*diff(h_county_5$mids[1:2])*length(x_county_5)
+lines(xfit_county_5,yfit_county_5,col="black",lwd=2)
+box()
+
+h_county_6 <- hist(county_log$lnnight,breaks = 30,col="lightblue",xlab = NULL,main = "Histogram of lognight")
+x_county_6 <- county_log$lnnight
+xfit_county_6 <- seq(min(x_county_6),max(x_county_6),length=40)
+yfit_county_6 <- dnorm(xfit_county_6,mean = mean(x_county_6),sd = sd(x_county_6))
+yfit_county_6 <- yfit_county_6*diff(h_county_6$mids[1:2])*length(x_county_6)
+lines(xfit_county_6,yfit_county_6,col="black",lwd=2)
+box()
+
+
+
+```
+
+### Multiple regression (OLS)
+#### City scale
+```{r}
+Regressiondata_city<- city_log  %>%  dplyr::select(lnnight, lnf1,lnf2,lnf3,lnf4,lnf5)
+city_multi_model <- lm( lnnight~ lnf2 +lnf3+ lnf4 +lnf5, data = Regressiondata_city)
+tidy(city_multi_model)
+```
+
+```{r}
+
+city_log <- city_log %>%
+  mutate(model_final_res = residuals(city_multi_model))
+
+par(mfrow=c(2,2))
+plot(city_multi_model)
+
+```
+```{r}
+qtm(city_log, fill = "model_final_res",title="Distribution of Residuals(City)")
+```
+```{r}
+coordsW_city <- city_log%>%
+  st_centroid()%>%
+  st_geometry()
+
+knn_coounty <-coordsW_city %>%
+  knearneigh(., k=4)
+
+city_knn <- knn_coounty %>%
+  knn2nb()
+
+knn_coounty_weight <- city_knn %>%
+  nb2listw(., style="C")
+
+city_Moran <- city_log %>%
+  st_drop_geometry()%>%
+  dplyr::select(model_final_res)%>%
+  pull()%>%
+  moran.test(., knn_coounty_weight)%>%
+  tidy()
+
+city_Moran
+```
+#### County scale
+```{r}
+Regressiondata_county<- county_log  %>%  dplyr::select(lnnight, lnf1,lnf2,lnf3,lnf4,lnf5)
+county_multi_model <- lm( lnnight~ lnf2 +lnf3+ lnf4 +lnf5, data = Regressiondata_county)
+tidy(county_multi_model)
+```
+
+```{r}
+
+county_log <- county_log %>%
+  mutate(model_final_res = residuals(county_multi_model))
+
+par(mfrow=c(2,2))
+plot(county_multi_model)
+
+```
+```{r}
+qtm(county_log, fill = "model_final_res",title="Distribution of Residuals(County)")
+```
+```{r}
+coordsW_county <- county_log%>%
+  st_centroid()%>%
+  st_geometry()
+
+knn_coounty <-coordsW_county %>%
+  knearneigh(., k=4)
+
+county_knn <- knn_coounty %>%
+  knn2nb()
+
+knn_coounty_weight <- county_knn %>%
+  nb2listw(., style="C")
+
+county_Moran <- county_log %>%
+  st_drop_geometry()%>%
+  dplyr::select(model_final_res)%>%
+  pull()%>%
+  moran.test(., knn_coounty_weight)%>%
+  tidy()
+
+county_Moran
+
+```
+
+### GWR
+#### City Scale
+```{r}
+library(spgwr)
+
+st_crs(city_log) = 27700
+
+city_log_SP <- city_log %>%
+  as(., "Spatial")
+
+st_crs(coordsW_city) = 27700
+
+coordsWSP_city <- coordsW_city %>%
+  as(., "Spatial")
+
+GWRbandwidth_city <- gwr.sel(lnnight ~ lnf2 + lnf3 +lnf4 +lnf5,
+                  data = city_log_SP, 
+                        coords=coordsWSP_city,
+                        adapt=T)
+gwr.model_city = gwr(lnnight ~ lnf2 + lnf3 +lnf4 +lnf5,
+                  data = city_log_SP, 
+                        coords=coordsWSP_city,
+                adapt=GWRbandwidth_city, 
+                hatmatrix=TRUE, 
+                se.fit=TRUE)
+gwr.model_city
+```
+
+
+```{r}
+results_city <- as.data.frame(gwr.model_city$SDF)
+
+#attach coefficients to original SF
+city_log_2 <- city_log %>%
+  mutate(coef_lnf2 = results_city$lnf2,
+         coef_lnf3 = results_city$lnf3,
+         coef_lnf4 = results_city$lnf4,
+         coef_lnf5 = results_city$lnf5)
+```
+
+
+```{r}
+
+gwr_city_2<-tm_shape(city_log_2) +tm_polygons(col = "coef_lnf2", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(a) Number of Enterprises (Unit)", position=c(0,0.9), size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_city_3<-tm_shape(city_log_2) +tm_polygons(col = "coef_lnf3", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(b) Total Profit (10000 yuan)", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_city_4<-tm_shape(city_log_2) +tm_polygons(col = "coef_lnf4", palette="PuBu",style="jenks",palette="YlOrBr",title= "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(c) Invest in Fixed Assets", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_city_5<-tm_shape(city_log_2) +tm_polygons(col = "coef_lnf5", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(d) Employed Persons", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+t_city=tmap_arrange(gwr_city_2,gwr_city_3,gwr_city_4,gwr_city_5)
+
+t_city
+
+```
+
+
+#### County Scale
+```{r}
+st_crs(county_log) = 27700
+
+county_log_SP <- county_log %>%
+  as(., "Spatial")
+
+st_crs(coordsW_county) = 27700
+
+coordsWSP_county <- coordsW_county %>%
+  as(., "Spatial")
+
+GWRbandwidth_county <- gwr.sel(lnnight ~ lnf2 + lnf3 +lnf4 +lnf5,
+                  data = county_log_SP, 
+                        coords=coordsWSP_county,
+                        adapt=T)
+gwr.model_county = gwr(lnnight ~ lnf2 + lnf3 +lnf4 +lnf5,
+                  data = county_log_SP, 
+                        coords=coordsWSP_county,
+                adapt=GWRbandwidth_county, 
+                hatmatrix=TRUE, 
+                se.fit=TRUE)
+gwr.model_county
+```
+
+
+```{r}
+results_county <- as.data.frame(gwr.model_county$SDF)
+
+#attach coefficients to original SF
+county_log_2 <- county_log %>%
+  mutate(coef_lnf2 = results_county$lnf2,
+         coef_lnf3 = results_county$lnf3,
+         coef_lnf4 = results_county$lnf4,
+         coef_lnf5 = results_county$lnf5)
+
+
+gwr_county_2<-tm_shape(county_log_2) +tm_polygons(col = "coef_lnf2", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(a) Number of Enterprises (Unit)", position=c(0,0.9), size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_county_3<-tm_shape(county_log_2) +tm_polygons(col = "coef_lnf3", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(b) Total Profit (10000 yuan)", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_county_4<-tm_shape(county_log_2) +tm_polygons(col = "coef_lnf4", palette="PuBu",style="jenks",palette="YlOrBr",title= "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(c) Invest in Fixed Assets", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+gwr_county_5<-tm_shape(county_log_2) +tm_polygons(col = "coef_lnf5", palette="PuBu",style="jenks",palette="YlOrBr",title = "Coefficient")+tm_layout(frame=FALSE,legend.position = c("right", "bottom"),legend.text.size = 0.6,legend.title.size = 0.7)+tm_credits("(d) Employed Persons", position=c(0,0.9),  size=0.7)+tm_scale_bar(position=c(0.35, 0.01),text.size = 0.5) +tm_compass(type = "arrow", position=c("left", 0.6)) 
+
+t_county=tmap_arrange(gwr_county_2,gwr_county_3,gwr_county_4,gwr_county_5)
+
+t_county
+
+```
