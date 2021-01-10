@@ -34,7 +34,7 @@ library(janitor)
 ```
 
 
-Input the gpkg file(pre-proccessed in QGIS):[gd.gpkg] (https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/blob/main/Desprictive%20statisics%20and%20Regression(Rmd)/gd.gpkg)
+Input the gpkg file(pre-proccessed in QGIS):[gd.gpkg](https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/blob/main/Desprictive%20statisics%20and%20Regression(Rmd)/gd.gpkg)
 
 
 ```{r}
@@ -51,10 +51,15 @@ plot(gd_county)
 
 
 ### Check the distribution of each variable
+
 F1: Per Capita Gross Domestic Product Data
+
 F2: Number of Enterprises (Unit) Data
+
 F3: Total Profit (10000 yuan) Data
+
 F4: Invest in Fixed Assets Data
+
 F5: Employed Persons Data
 
 #### City scale
