@@ -25,3 +25,7 @@ Influencing factors data in 2019:[gd_attributes2019.csv](https://github.com/akia
 [Data preprocess and SDE](https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/tree/main/Data%20preprocess%20and%20SDE%20(QGIS%20Project))
 
 [Desprictive statisics and GWR](https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/tree/main/Desprictive%20statisics%20and%20Regression(Rmd))
+
+## Access to the paper
+
+You can access to the PDF of the paper [here](https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/blob/main/Paper/Paper.pdf), and the Latex version [here](https://github.com/akiakutaji/Economic-spatial-pattern-in-Guangdong/blob/main/Paper/Paper(latex).zip), which is able to count the words via Overleaf.
